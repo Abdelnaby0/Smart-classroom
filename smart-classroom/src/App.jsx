@@ -252,7 +252,7 @@ export default function App() {
         {/* OCR UPLOAD */}
         <div className="mb-6">
           <div className="flex items-center">
-            <input className="w-50" type="file" onChange={handleImage} />
+            <input className="w-54" type="file" onChange={handleImage} />
             <Upload />
           </div>
           {loading && (
@@ -273,12 +273,12 @@ export default function App() {
               <div className="bg-white/5 border border-white/10 rounded-3xl p-5 mb-8 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <Wifi className="text-green-400" />
-                  <span className="text-lg">System Connected</span>
+                  <span className="text-md xl:text-lg">System Connected</span>
                 </div>
 
                 <div className="flex items-center gap-2 text-cyan-400">
                   <BellRing size={18} />
-                  <span>Live Monitoring</span>
+                  <span >Live Monitoring</span>
                 </div>
               </div>
 
