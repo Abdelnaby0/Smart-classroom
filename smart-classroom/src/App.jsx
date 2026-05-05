@@ -329,13 +329,13 @@ export default function App() {
 
         {/* OCR UPLOAD */}
         <div className="mb-6">
-          <div className="flex flex-col xl:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <label className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-xl cursor-pointer flex items-center gap-2 transition-colors duration-200">
               <span>Upload Schedule</span>
               <Upload size={20} />
               <input type="file" onChange={handleImage} className="hidden" />
             </label>
-            <div className="w-full xl:w-1/2 flex justify-center xl:justify-end">
+            <div className="w-full md:w-1/2 flex justify-center md:justify-end">
               {hasData && (
                 <button
                   onClick={() => {
