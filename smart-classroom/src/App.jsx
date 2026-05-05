@@ -161,6 +161,7 @@ export default function App() {
 
         if (start === null || end === null) return;
 
+        // eslint-disable-next-line no-useless-assignment
         let isOn = false;
 
         if (start <= end) {
@@ -234,12 +235,12 @@ export default function App() {
 
           {/* Stats */}
           <div className="grid  sm:grid-cols-2 xl:grid-cols-2  gap-4">
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-5 min-w-[180px]">
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-5">
               <p className="text-slate-400 text-sm">Total Rooms</p>
               <h2 className="text-3xl font-bold mt-2">{rooms.length}</h2>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-5 min-w-[180px]">
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-5">
               <p className="text-slate-400 text-sm">Rooms ON</p>
               <h2 className="text-3xl font-bold mt-2 text-green-400">
                 {activeRooms}
