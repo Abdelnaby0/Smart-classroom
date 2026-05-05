@@ -210,7 +210,15 @@ export default function App() {
 
       setRooms(formatted);
 
-      if (formatted.length > 0) setHasData(true);
+      const hasScheduleData = formatted.some(
+        (room) =>
+          room.startTime !== "" ||
+          room.endTime !== "" ||
+          room.lecture !== "" ||
+          room.schedule === true
+      );
+
+      setHasData(hasScheduleData);
     });
 
     return () => unsub();
@@ -269,7 +277,17 @@ export default function App() {
       update(roomRef, { manual: false, schedule: true });
     }
   };
+  //==================== RESET BUTTON ====================//
+  const resetSchedule = async () => {
+    const cleanRooms = {
+      Room1: { manual: false, schedule: false, light: false, startTime: "", endTime: "", lecture: "" },
+      Room2: { manual: false, schedule: false, light: false, startTime: "", endTime: "", lecture: "" },
+      Room3: { manual: false, schedule: false, light: false, startTime: "", endTime: "", lecture: "" },
+      Room4: { manual: false, schedule: false, light: false, startTime: "", endTime: "", lecture: "" }
+    };
 
+    await set(ref(db, "rooms"), cleanRooms);
+  };
   const activeRooms = rooms.filter((r) => r.light).length;
 
 
@@ -311,10 +329,28 @@ export default function App() {
 
         {/* OCR UPLOAD */}
         <div className="mb-6">
-          <div className="flex items-center">
-            <input className="w-54" type="file" onChange={handleImage} />
-            <Upload />
+          <div className="flex flex-col xl:flex-row items-center justify-between gap-4">
+            <label className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-xl cursor-pointer flex items-center gap-2 transition-colors duration-200">
+              <span>Upload Schedule</span>
+              <Upload size={20} />
+              <input type="file" onChange={handleImage} className="hidden" />
+            </label>
+            <div className="w-full xl:w-1/2 flex justify-center xl:justify-end">
+              {hasData && (
+                <button
+                  onClick={() => {
+                    if (window.confirm("Are you sure you want to reset all schedules?")) {
+                      resetSchedule();
+                    }
+                  }}
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-semibold transition cursor-pointer"
+                >
+                  Reset Schedule
+                </button>
+              )}
+            </div>
           </div>
+
           {loading && (
             <p className="text-yellow-400 mt-2">Processing OCR...</p>
           )}
