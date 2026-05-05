@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { set, ref, onValue, update } from "firebase/database";
 import { db } from "./firebase";
+import Login from "./Login";
 import {
   Lightbulb,
   School,
@@ -17,7 +18,9 @@ export default function App() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasData, setHasData] = useState(false);
-
+  const [isAuth, setIsAuth] = useState(
+    localStorage.getItem("auth") === "true"
+  );
   /* ================= DEFAULT DATA ================= */
   const defaultRooms = {
     Room1: { manual: false, schedule: false, light: false, startTime: "", endTime: "", lecture: "" },
@@ -289,8 +292,14 @@ export default function App() {
     await set(ref(db, "rooms"), cleanRooms);
   };
   const activeRooms = rooms.filter((r) => r.light).length;
+  const logout = () => {
+    localStorage.removeItem("auth");
+    window.location.reload();
+  };
 
-
+  if (!isAuth) {
+    return <Login onLogin={setIsAuth} />;
+  }
   /* ================= UI ================= */
   return (
     <div className="min-h-screen bg-slate-950 text-white overflow-hidden">
@@ -299,31 +308,94 @@ export default function App() {
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/20 blur-[120px] rounded-full"></div>
       <div className="relative z-10 p-8">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row justify-between gap-6 mb-10">
-          <div>
-            <h1 className="text-4xl md:text-5xl  font-bold flex items-center gap-3">
-              <Monitor size={42} className="text-cyan-400" />
-              Smart Classroom
-            </h1>
-            <p className="text-slate-400 mt-3 text-lg">
-              IoT Real-Time Classroom Light Control Dashboard
-            </p>
-          </div>
+        <div className="flex flex-col lg:flex-row justify-between items-center gap-6 mb-10">
 
-          {/* Stats */}
-          <div className="grid  sm:grid-cols-2 xl:grid-cols-2  gap-4">
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-5">
-              <p className="text-slate-400 text-sm">Total Rooms</p>
-              <h2 className="text-3xl font-bold mt-2">{rooms.length}</h2>
+          {/* TOP ROW ) */}
+          <div className="w-full md:w-2/3 flex items-center justify-between lg:justify-start">
+
+            {/* TITLE */}
+            <div>
+              <h1 className="text-xl md:text-4xl xlg:text-5xl font-bold flex items-center gap-3">
+                <Monitor size={36} className="text-cyan-400" />
+                Smart Classroom
+              </h1>
+              <p className="text-slate-400 mt-2 hidden sm:block text-base">
+                IoT Real-Time Classroom Light Control Dashboard
+              </p>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-5">
-              <p className="text-slate-400 text-sm">Rooms ON</p>
-              <h2 className="text-3xl font-bold mt-2 text-green-400">
-                {activeRooms}
-              </h2>
-            </div>
+            {/*  Logout Button */}
+            <button
+              onClick={logout}
+              className="lg:hidden bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-2 rounded-xl hover:bg-red-500 hover:text-white transition text-sm font-semibold"
+            >
+              Logout
+            </button>
           </div>
+
+          {/* RIGHT SECTION */}
+          <div className="w-full flex flex-col sm:flex-row items-stretch sm:items-center gap-4 justify-around">
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-4 w-full">
+
+              {/* Total */}
+              <div className="relative bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 backdrop-blur-xl overflow-hidden w-full">
+                <div className="absolute inset-0 bg-cyan-500/10 blur-xl opacity-30"></div>
+
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between">
+                    <p className="text-slate-400 text-xs sm:text-sm">Total</p>
+                    <Monitor size={16} className="text-cyan-400" />
+                  </div>
+
+                  <h2 className="text-xl sm:text-2xl font-bold mt-1">
+                    {rooms.length}
+                  </h2>
+
+                  <div className="w-full h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
+                    <div className="h-full bg-cyan-400 w-full"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Active */}
+              <div className="relative bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 backdrop-blur-xl overflow-hidden w-full">
+                <div className="absolute inset-0 bg-green-500/10 blur-xl opacity-30"></div>
+
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between">
+                    <p className="text-slate-400 text-xs sm:text-sm">Active</p>
+                    <Lightbulb size={16} className="text-green-400" />
+                  </div>
+
+                  <h2 className="text-xl sm:text-2xl font-bold mt-1 text-green-400">
+                    {activeRooms}
+                  </h2>
+
+                  <div className="w-full h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
+                    <div
+                      className="h-full bg-green-400 transition-all duration-500"
+                      style={{
+                        width: `${rooms.length ? (activeRooms / rooms.length) * 100 : 0}%`
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/*  Logout Desktop */}
+            <button
+              onClick={logout}
+              className="hidden lg:block bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-2 rounded-xl hover:bg-red-500 hover:text-white transition font-semibold"
+            >
+              Logout
+            </button>
+
+          </div>
+
         </div>
 
 
