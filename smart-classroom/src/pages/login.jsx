@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { Monitor, Lock, Mail } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
 
 export default function Login({ onLogin }) {
+
+    const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -13,6 +17,7 @@ export default function Login({ onLogin }) {
         ) {
             localStorage.setItem("auth", "true");
             onLogin(true);
+            navigate("/"); // 👈 redirect to home
         } else {
             setError("Invalid email or password");
         }
