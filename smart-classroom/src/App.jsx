@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ref, onValue, update } from "firebase/database";
+import { set, ref, onValue, update } from "firebase/database";
 import { db } from "./firebase";
 import {
   Lightbulb,
@@ -17,6 +17,30 @@ export default function App() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasData, setHasData] = useState(false);
+
+  /* ================= DEFAULT DATA ================= */
+  const defaultRooms = {
+    Room1: { manual: false, schedule: false, light: false, startTime: "", endTime: "", lecture: "" },
+    Room2: { manual: false, schedule: false, light: false, startTime: "", endTime: "", lecture: "" },
+    Room3: { manual: false, schedule: false, light: false, startTime: "", endTime: "", lecture: "" },
+    Room4: { manual: false, schedule: false, light: false, startTime: "", endTime: "", lecture: "" }
+  };
+
+  /* ================= INIT FIREBASE ================= */
+  const initializeFirebase = async () => {
+    const initRef = ref(db, "initialized");
+
+    onValue(initRef, async (snapshot) => {
+      const initialized = snapshot.val();
+
+      if (!initialized) {
+        console.log("First time setup...");
+
+        await set(ref(db, "rooms"), defaultRooms);
+        await set(ref(db, "initialized"), true);
+      }
+    }, { onlyOnce: true });
+  };
 
   /* ================= TIME PARSER ================= */
   const parseTimeToMinutes = (timeStr) => {
@@ -47,7 +71,6 @@ export default function App() {
     formData.append("language", "eng");
     formData.append("apikey", "K83793786488957");
     formData.append("isOverlayRequired", "false");
-    formData.append("OCREngine", "2");
 
     try {
       const res = await fetch("https://api.ocr.space/parse/image", {
@@ -70,6 +93,8 @@ export default function App() {
       await syncWithFirebase(parsed);
 
       setHasData(true);
+      console.log(data);
+
 
     } catch (err) {
       console.error(err);
@@ -80,36 +105,80 @@ export default function App() {
 
   /* ================= PARSE ================= */
   const parseSchedule = (text) => {
-    const lines = text.split("\n");
-    const data = [];
+    const lines = text
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(l => l && l !== "O" && l !== "0");
+
+    let mode = "";
+    const rooms = [];
+    const startTimes = [];
+    const endTimes = [];
+    const subjects = [];
+
+    const fixTime = (t) => {
+      if (!t.match(/AM|PM/i)) return t + " PM";
+      return t.toUpperCase();
+    };
 
     lines.forEach((line) => {
-      const clean = line.replace(/[^a-zA-Z0-9:\-\sAPMapm]/g, "").trim();
 
-      const match = clean.match(
-        /(\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*[-to]+\s*(\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*(.+)/i
-      );
+      const lower = line.toLowerCase();
 
-      if (match) {
-        data.push({
-          startTime: match[1],
-          endTime: match[2],
-          lecture: match[3],
-        });
+      if (lower.includes("room")) return (mode = "room");
+      if (lower.includes("start")) return (mode = "start");
+      if (lower.includes("end")) return (mode = "end");
+      if (lower.includes("subject")) return (mode = "subject");
+
+      line = line.replace(/^[0o]\s*/i, "");
+      line = line.replace(/(AM|PM)(\d)/i, "$1 $2");
+
+
+      if (mode === "room" && /^[A-Z]\d$/i.test(line)) {
+        rooms.push(line.toUpperCase());
       }
+
+      else if (mode === "start" && /\d{1,2}:\d{2}/.test(line)) {
+        startTimes.push(fixTime(line));
+      }
+
+      else if (mode === "end" && /\d{1,2}:\d{2}/.test(line)) {
+        endTimes.push(fixTime(line));
+      }
+
+      else if (mode === "subject") {
+        subjects.push(line);
+      }
+
     });
 
-    return data;
+    const maxLen = Math.max(
+      rooms.length,
+      startTimes.length,
+      endTimes.length,
+      subjects.length
+    );
+
+    const result = [];
+
+    for (let i = 0; i < maxLen; i++) {
+      result.push({
+        room: rooms[i] || `Room${i + 1}`,
+        startTime: startTimes[i] || "",
+        endTime: endTimes[i] || "",
+        lecture: subjects[i] || ""
+      });
+    }
+
+    return result;
   };
 
-  /* ================= FIREBASE ================= */
+  /* ================= FIREBASE SYNC ================= */
   const syncWithFirebase = async (roomsArray) => {
-    const roomKeys = ["Room1", "Room2", "Room3", "Room4"];
     const updates = {};
 
-    roomKeys.forEach((key, index) => {
-      const roomData = roomsArray[index];
-      if (!roomData) return;
+    roomsArray.forEach((roomData, index) => {
+      const key = `Room${index + 1}`;
 
       updates[key] = {
         manual: false,
@@ -125,6 +194,8 @@ export default function App() {
 
   /* ================= REALTIME ================= */
   useEffect(() => {
+    initializeFirebase();
+
     const roomsRef = ref(db, "rooms");
 
     const unsub = onValue(roomsRef, (snapshot) => {
@@ -153,7 +224,6 @@ export default function App() {
 
       rooms.forEach((room) => {
 
-
         if (room.manual === true) return;
 
         const start = parseTimeToMinutes(room.startTime);
@@ -169,7 +239,6 @@ export default function App() {
         } else {
           isOn = currentMinutes >= start || currentMinutes < end;
         }
-
 
         if (room.light !== isOn) {
           update(ref(db, `rooms/${room.id}`), {
@@ -189,30 +258,20 @@ export default function App() {
     const roomRef = ref(db, `rooms/${id}`);
 
     if (mode === "manual_on") {
-      update(roomRef, {
-        manual: true,
-        schedule: false,
-        light: true,
-      });
+      update(roomRef, { manual: true, schedule: false, light: true });
     }
 
     if (mode === "manual_off") {
-      update(roomRef, {
-        manual: true,
-        schedule: false,
-        light: false,
-      });
+      update(roomRef, { manual: true, schedule: false, light: false });
     }
 
     if (mode === "auto") {
-      update(roomRef, {
-        manual: false,
-        schedule: true,
-      });
+      update(roomRef, { manual: false, schedule: true });
     }
   };
 
   const activeRooms = rooms.filter((r) => r.light).length;
+
 
   /* ================= UI ================= */
   return (
